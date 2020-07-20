@@ -3,6 +3,7 @@ from splinter import Browser
 from bs4 import BeautifulSoup as soup
 import pandas as pd
 import datetime as dt
+import time
 
 
 def scrape_all():
@@ -17,7 +18,9 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "image_url": image_url(browser),
+        "title": title(browser)
     }
 
     # Stop webdriver and return data
@@ -99,6 +102,41 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def image_url(browser):
+
+    # Scrape Mars images
+    # Visit the mars nasa news site
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+    
+    img_url = []
+    hem_image_elem = browser.find_by_css('a.itemLink h3')
+
+    for i in range(len(hem_image_elem)):
+        browser.find_by_css('a.itemLink h3')[i].click()
+        time.sleep(2)
+        high_res_image = browser.links.find_by_partial_text('Sample').first
+        img_hem_url = high_res_image['href']
+        img_url.append(img_hem_url)
+        browser.back()
+         
+    return img_url
+
+def title(browser):
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
+    hem_title = img_soup.find_all('div', class_='item')
+    print(len(hem_title))
+    titles= []
+    for tag in hem_title:
+        hem = tag.find('h3').get_text()
+        titles.append(hem)
+    return titles
+
 
 if __name__ == "__main__":
 
